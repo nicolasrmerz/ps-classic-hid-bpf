@@ -1,0 +1,89 @@
+Dump descriptor/record stream:
+sudo usbhid-dump -d 054c:0cda -e descriptor
+sudo usbhid-dump -d 054c:0cda -e stream
+
+Human-readable descriptor:
+sudo usbhid-dump -d 054c:0cda -e descriptor | grep -v : | xxd -r -p | hidrd-convert -o spec
+
+
+descriptor:
+003:017:000:DESCRIPTOR         1789877538.470052
+ 05 01 09 05 A1 01 15 00 25 01 75 01 95 0A 05 09
+ 19 01 29 0A 81 02 05 01 09 30 09 31 15 00 25 02
+ 35 00 45 02 75 02 95 02 81 02 75 01 95 02 81 01
+ C0
+
+Human readable:
+Usage Page (Desktop),       ; Generic desktop controls (01h)
+Usage (Gamepad),            ; Gamepad (05h, application collection)
+Collection (Application),
+    Logical Minimum (0),
+    Logical Maximum (1),
+    Report Size (1),
+    Report Count (10),
+    Usage Page (Button),    ; Button (09h)
+    Usage Minimum (01h),
+    Usage Maximum (0Ah),
+    Input (Variable),
+    Usage Page (Desktop),   ; Generic desktop controls (01h)
+    Usage (X),              ; X (30h, dynamic value)
+    Usage (Y),              ; Y (31h, dynamic value)
+    Logical Minimum (0),
+    Logical Maximum (2),
+    Physical Minimum (0),
+    Physical Maximum (2),
+    Report Size (2),
+    Report Count (2),
+    Input (Variable),
+    Report Size (1),
+    Report Count (2),
+    Input (Constant),
+End Collection
+
+
+records:
+
+No press:
+00 14
+
+DPAD Up:
+00 04
+
+DPAD Right:
+00 18
+
+DPAD Down:
+00 24
+
+DPAD Left:
+00 10
+
+Select:
+00 15
+
+Start:
+00 16
+
+Triangle:
+01 14
+
+Circle:
+02 14
+
+Cross:
+04 14
+
+Square:
+08 14
+
+L1:
+40 14
+
+L2:
+10 14
+
+R1:
+80 14
+
+R2:
+20 14
