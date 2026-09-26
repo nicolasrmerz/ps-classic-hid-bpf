@@ -30,32 +30,31 @@ static void sig_handler(int sig)
 
 /* Simple mouse report descriptor */
 static unsigned char rdesc[] = {
-	0x05, 0x01,	/* USAGE_PAGE (Generic Desktop) */
-	0x09, 0x02,	/* USAGE (Mouse) */
-	0xa1, 0x01,	/* COLLECTION (Application) */
-	0x09, 0x01,	/*   USAGE (Pointer) */
-	0xa1, 0x00,	/*   COLLECTION (Physical) */
-	0x05, 0x09,	/*     USAGE_PAGE (Button) */
-	0x19, 0x01,	/*     USAGE_MINIMUM (Button 1) */
-	0x29, 0x03,	/*     USAGE_MAXIMUM (Button 3) */
-	0x15, 0x00,	/*     LOGICAL_MINIMUM (0) */
-	0x25, 0x01,	/*     LOGICAL_MAXIMUM (1) */
-	0x95, 0x03,	/*     REPORT_COUNT (3) */
-	0x75, 0x01,	/*     REPORT_SIZE (1) */
-	0x81, 0x02,	/*     INPUT (Data,Var,Abs) */
-	0x95, 0x01,	/*     REPORT_COUNT (1) */
-	0x75, 0x05,	/*     REPORT_SIZE (5) */
-	0x81, 0x03,	/*     INPUT (Cnst,Var,Abs) */
-	0x05, 0x01,	/*     USAGE_PAGE (Generic Desktop) */
-	0x09, 0x30,	/*     USAGE (X) */
-	0x09, 0x31,	/*     USAGE (Y) */
-	0x15, 0x81,	/*     LOGICAL_MINIMUM (-127) */
-	0x25, 0x7f,	/*     LOGICAL_MAXIMUM (127) */
-	0x75, 0x08,	/*     REPORT_SIZE (8) */
-	0x95, 0x02,	/*     REPORT_COUNT (2) */
-	0x81, 0x06,	/*     INPUT (Data,Var,Rel) */
-	0xc0,		/*   END_COLLECTION */
-	0xc0		/* END_COLLECTION */
+	0x05, 0x01,
+	0x09, 0x05,
+	0xA1, 0x01,
+	0x15, 0x00,
+	0x25, 0x01,
+	0x75, 0x01,
+	0x95, 0x0A,
+	0x05, 0x09,
+	0x19, 0x01,
+	0x29, 0x0A,
+	0x81, 0x02,
+	0x05, 0x01,
+	0x09, 0x30,
+	0x09, 0x31,
+	0x15, 0x00,
+	0x25, 0x02,
+	0x35, 0x00,
+	0x45, 0x02,
+	0x75, 0x02,
+	0x95, 0x02,
+	0x81, 0x02,
+	0x75, 0x01,
+	0x95, 0x02,
+	0x81, 0x01,
+	0xC0
 };
 
 static int uhid_fd = -1;
@@ -88,12 +87,12 @@ static int create_uhid_device(void)
 
 	memset(&ev, 0, sizeof(ev));
 	ev.type = UHID_CREATE;
-	strcpy((char*)ev.u.create.name, "BPF Virtual Mouse");
+	strcpy((char*)ev.u.create.name, "BPF Virtual PS Classic Controller");
 	ev.u.create.rd_data = rdesc;
 	ev.u.create.rd_size = sizeof(rdesc);
 	ev.u.create.bus = BUS_USB;
-	ev.u.create.vendor = 0x15d9;
-	ev.u.create.product = 0x0a37;
+	ev.u.create.vendor = 0x054C;
+	ev.u.create.product = 0x0CDA;
 	ev.u.create.version = 0;
 	ev.u.create.country = 0;
 
@@ -118,16 +117,15 @@ static int destroy_uhid_device(int fd)
 	return 0;
 }
 
-static int send_mouse_event(int fd, __s8 x, __s8 y)
+static int send_controller_event(int fd, __s8 x, __s8 y)
 {
 	struct uhid_event ev;
 
 	memset(&ev, 0, sizeof(ev));
 	ev.type = UHID_INPUT;
-	ev.u.input.size = 3;
-	ev.u.input.data[0] = 0;	/* Buttons */
-	ev.u.input.data[1] = x;	/* X movement */
-	ev.u.input.data[2] = y;	/* Y movement */
+	ev.u.input.size = 2;
+	ev.u.input.data[0] = x;	/* Buttons */
+	ev.u.input.data[1] = y;	/* X movement */
 
 	return uhid_write(fd, &ev);
 }
@@ -143,7 +141,7 @@ static int find_hid_device(void)
 	sleep(1);
 
 	for (i = 0; i < 100; i++) {
-		snprintf(path, sizeof(path), "/sys/bus/hid/devices/0003:15D9:0A37.%04X/uevent", i);
+		snprintf(path, sizeof(path), "/sys/bus/hid/devices/0003:054C:0CDA.%04X/uevent", i);
 		fp = fopen(path, "r");
 		if (fp) {
 			fclose(fp);
@@ -177,51 +175,58 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	/* Open and load BPF program */
-	skel = hid_input_modifier_bpf__open();
-	if (!skel) {
-		fprintf(stderr, "Failed to open BPF skeleton\n");
-		destroy_uhid_device(uhid_fd);
-		return 1;
-	}
+	// /* Open and load BPF program */
+	// skel = hid_input_modifier_bpf__open();
+	// if (!skel) {
+	// 	fprintf(stderr, "Failed to open BPF skeleton\n");
+	// 	destroy_uhid_device(uhid_fd);
+	// 	return 1;
+	// }
 
-	skel->struct_ops.input_modifier->hid_id = hid_id;
+	// skel->struct_ops.input_modifier->hid_id = hid_id;
 
-	err = hid_input_modifier_bpf__load(skel);
-	if (err) {
-		fprintf(stderr, "Failed to load BPF skeleton: %d\n", err);
-		goto cleanup;
-	}
+	// err = hid_input_modifier_bpf__load(skel);
+	// if (err) {
+	// 	fprintf(stderr, "Failed to load BPF skeleton: %d\n", err);
+	// 	goto cleanup;
+	// }
 
-	/* Attach BPF program */
-	link = bpf_map__attach_struct_ops(skel->maps.input_modifier);
-	if (!link) {
-		fprintf(stderr, "Failed to attach BPF program: %s\n", strerror(errno));
-		err = -1;
-		goto cleanup;
-	}
+	// /* Attach BPF program */
+	// link = bpf_map__attach_struct_ops(skel->maps.input_modifier);
+	// if (!link) {
+	// 	fprintf(stderr, "Failed to attach BPF program: %s\n", strerror(errno));
+	// 	err = -1;
+	// 	goto cleanup;
+	// }
 
-	printf("BPF program attached successfully!\n");
-	printf("The BPF program will DOUBLE all mouse movements\n\n");
-	printf("Sending test mouse events:\n");
-	printf("View trace with: sudo cat /sys/kernel/debug/tracing/trace_pipe\n\n");
+	// printf("BPF program attached successfully!\n");
+	// printf("The BPF program will DOUBLE all mouse movements\n\n");
+	// printf("Sending test mouse events:\n");
+	// printf("View trace with: sudo cat /sys/kernel/debug/tracing/trace_pipe\n\n");
 
-	/* Send some test events */
-	for (int i = 0; i < 5 && !exiting; i++) {
-		__s8 x = 11, y = 23;
-		printf("Sending: X=%d, Y=%d (BPF will double to X=%d, Y=%d)\n",
-		       x, y, x*2, y*2);
-		send_mouse_event(uhid_fd, x, y);
-		sleep(1);
-	}
+	// /* Send some test events */
+	// for (int i = 0; i < 5 && !exiting; i++) {
+	// 	__s8 x = 11, y = 23;
+	// 	printf("Sending: X=%d, Y=%d (BPF will double to X=%d, Y=%d)\n",
+	// 	       x, y, x*2, y*2);
+	// 	send_mouse_event(uhid_fd, x, y);
+	// 	sleep(1);
+	// }
+
+	send_controller_event(uhid_fd, 0x00, 0x14);
+	sleep(1);
+	send_controller_event(uhid_fd, 0x00, 0x18);
+	sleep(1);
+	send_controller_event(uhid_fd, 0x00, 0x14);
+
 
 	printf("\nPress Ctrl-C to exit...\n");
 	while (!exiting)
 		sleep(1);
 
 cleanup:
-	bpf_link__destroy(link);
-	hid_input_modifier_bpf__destroy(skel);
+	// bpf_link__destroy(link);
+	// hid_input_modifier_bpf__destroy(skel);
 	destroy_uhid_device(uhid_fd);
 	return err < 0 ? -err : 0;
 }
